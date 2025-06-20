@@ -3,7 +3,6 @@ from ftplib import FTP
 import discord
 from discord.ext import tasks, commands
 import os
-import json
 
 from flask import Flask, Response
 from threading import Thread
@@ -102,22 +101,6 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 last_status = None  # 状態変化の判定用
 last_player_count = None  # プレイヤー数変化の判定用
 
-MESSAGE_ID_FILE = "message_id.json"
-
-
-def save_message_id(message_id):
-    with open(MESSAGE_ID_FILE, "w") as f:
-        json.dump({"message_id": message_id}, f)
-
-
-def load_message_id():
-    try:
-        with open(MESSAGE_ID_FILE, "r") as f:
-            data = json.load(f)
-            return data.get("message_id")
-    except FileNotFoundError:
-        return None
-
 
 def create_status_embed(status: str, player_count: int) -> discord.Embed:
     color_map = {
@@ -140,27 +123,20 @@ def count_players(log_content):
     disconnected = set()
 
     for line in log_content.splitlines():
-        # Minecraftのログ形式に合わせて修正
-        if " joined the game" in line:
-            # 例: [13:45:00] [Server thread/INFO]: PlayerName joined the game
-            parts = line.split(": ")
-            if len(parts) >= 2:
-                name_part = parts[-1]
-                if " joined the game" in name_part:
-                    name = name_part.replace(" joined the game", "").strip()
-                    connected.add(name)
-        elif " left the game" in line:
-            # 例: [13:45:00] [Server thread/INFO]: PlayerName left the game
-            parts = line.split(": ")
-            if len(parts) >= 2:
-                name_part = parts[-1]
-                if " left the game" in name_part:
-                    name = name_part.replace(" left the game", "").strip()
-                    disconnected.add(name)
+        if "Player connected:" in line:
+            # 例: Player connected: HonestLamp91678, ...
+            parts = line.split("Player connected:")
+            if len(parts) > 1:
+                name = parts[1].split(",")[0].strip()
+                connected.add(name)
+        elif "Player disconnected:" in line:
+            parts = line.split("Player disconnected:")
+            if len(parts) > 1:
+                name = parts[1].split(",")[0].strip()
+                disconnected.add(name)
 
     # 実際に接続中のプレイヤー = 接続したけど切断していない人
     current_players = connected - disconnected
-    print(f"デバッグ: 接続: {connected}, 切断: {disconnected}, 現在: {current_players}")
     return len(current_players)
 
 
@@ -200,31 +176,16 @@ async def check_server_status():
         status = parse_status(log_content)
         player_count = count_players(log_content)
 
-        print(f"デバッグ: 状態={status}, プレイヤー数={player_count}")
-        
         if status != last_status or player_count != last_player_count:
-            print(f"変化検出: 前回状態={last_status}→{status}, 前回人数={last_player_count}→{player_count}")
             last_status = status
             last_player_count = player_count
             channel = bot.get_channel(CHANNEL_ID)
             embed = create_status_embed(status, player_count)
 
-            message_id = load_message_id()
-            if message_id:
-                try:
-                    message = await channel.fetch_message(message_id)
-                    await message.edit(embed=embed)
-                    print("メッセージを更新しました")
-                except discord.NotFound:
-                    # メッセージが見つからない場合は新しく送信
-                    new_message = await channel.send(embed=embed)
-                    save_message_id(new_message.id)
-                    print("新しいメッセージを送信しました")
+            if not hasattr(bot, "status_message"):
+                bot.status_message = await channel.send(embed=embed)
             else:
-                # 初回送信
-                new_message = await channel.send(embed=embed)
-                save_message_id(new_message.id)
-                print("初回メッセージを送信しました")
+                await bot.status_message.edit(embed=embed)
 
     except Exception as e:
         print(f"エラー: {e}")
