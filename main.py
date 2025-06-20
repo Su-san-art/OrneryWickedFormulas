@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, Response
 from threading import Thread
 
 app = Flask('')
@@ -6,7 +6,7 @@ app = Flask('')
 
 @app.route('/')
 def home():
-    return '''
+    html_content = '''
     <!DOCTYPE html>
     <html lang="ja">
     <head>
@@ -55,6 +55,7 @@ def home():
     </body>
     </html>
     '''
+    return Response(html_content, mimetype='text/html')
 
 
 def run():
