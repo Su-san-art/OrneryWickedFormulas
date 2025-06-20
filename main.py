@@ -6,7 +6,55 @@ app = Flask('')
 
 @app.route('/')
 def home():
-    return "I'm alive!"
+    return '''
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>マインクラフトサーバー監視Bot</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif; 
+                text-align: center; 
+                padding: 50px; 
+                background-color: #f0f0f0;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+            .status { 
+                font-size: 18px; 
+                margin: 20px 0; 
+                padding: 15px;
+                border-radius: 5px;
+                background-color: #e8f5e8;
+            }
+            .online { color: green; }
+            .offline { color: red; }
+            h1 { color: #333; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🎮 マインクラフトサーバー監視Bot</h1>
+            <div class="status">
+                <p class="online">✅ Discordボット稼働中</p>
+                <p>📊 サーバー状態はDiscordで確認できます</p>
+            </div>
+            <hr>
+            <p><strong>Discord チャンネルID:</strong> 1385555472605511780</p>
+            <p><strong>監視間隔:</strong> 1分ごと</p>
+            <p><strong>機能:</strong> プレイヤー数・サーバー状態の自動監視</p>
+        </div>
+    </body>
+    </html>
+    '''
 
 
 def run():
