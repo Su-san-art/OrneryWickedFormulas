@@ -1,3 +1,9 @@
+import io
+from ftplib import FTP
+import discord
+from discord.ext import tasks, commands
+import os
+
 from flask import Flask, Response
 from threading import Thread
 
@@ -71,12 +77,6 @@ keep_alive()
 
 
 # ...以下、あなたのBotコード...
-
-import io
-from ftplib import FTP
-import discord
-from discord.ext import tasks, commands
-import os
 
 # -- FTP接続情報（安全のため、環境変数やReplit Secretsに入れてください） --
 FTP_HOST = "162.43.90.173"
