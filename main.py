@@ -99,6 +99,7 @@ intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="/", intents=intents)
 
 last_status = None  # 状態変化の判定用
+last_player_count = None  # プレイヤー数変化の判定用
 
 
 def create_status_embed(status: str, player_count: int) -> discord.Embed:
@@ -169,16 +170,15 @@ def parse_status(log_content):
 # ✅ その後、ループやイベントで使う
 @tasks.loop(minutes=1)
 async def check_server_status():
-    global last_status
+    global last_status, last_player_count
     try:
         log_content = fetch_log()
         status = parse_status(log_content)
         player_count = count_players(log_content)
 
-        if status != last_status or player_count != getattr(
-                check_server_status, "last_player_count", None):
+        if status != last_status or player_count != last_player_count:
             last_status = status
-            check_server_status.last_player_count = player_count
+            last_player_count = player_count
             channel = bot.get_channel(CHANNEL_ID)
             embed = create_status_embed(status, player_count)
 
