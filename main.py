@@ -1,8 +1,10 @@
+
 import io
 from ftplib import FTP
 import discord
 from discord.ext import tasks, commands
 import os
+import json
 
 from flask import Flask, Response
 from threading import Thread
@@ -76,9 +78,6 @@ def keep_alive():
 
 keep_alive()
 
-
-# ...以下、あなたのBotコード...
-
 # -- FTP接続情報（安全のため、環境変数やReplit Secretsに入れてください） --
 FTP_HOST = "162.43.90.173"
 FTP_PORT = 10021
@@ -94,6 +93,7 @@ if not FTP_USER or not FTP_PASS or not DISCORD_TOKEN:
     print("エラー: 必要な環境変数が設定されていません")
     print("FTP_USER, FTP_PASS, DISCORD_TOKEN を Replit Secrets で設定してください")
     exit(1)
+
 CHANNEL_ID = 1385555472605511780  # 通知したいチャンネルIDに変更してね
 
 intents = discord.Intents.default()
@@ -101,6 +101,22 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 
 last_status = None  # 状態変化の判定用
 last_player_count = None  # プレイヤー数変化の判定用
+
+MESSAGE_ID_FILE = "message_id.json"
+
+
+def save_message_id(message_id):
+    with open(MESSAGE_ID_FILE, "w") as f:
+        json.dump({"message_id": message_id}, f)
+
+
+def load_message_id():
+    try:
+        with open(MESSAGE_ID_FILE, "r") as f:
+            data = json.load(f)
+            return data.get("message_id")
+    except FileNotFoundError:
+        return None
 
 
 def create_status_embed(status: str, player_count: int) -> discord.Embed:
@@ -151,7 +167,6 @@ def fetch_log():
         return bio.read().decode("utf-8")
 
 
-# ✅ まず関数を定義（上の方に書く）
 def parse_status(log_content):
     if not log_content.strip():
         return "⚫️ログなし（未起動または停止中）"
@@ -168,7 +183,6 @@ def parse_status(log_content):
     return "⚫️状態不明"
 
 
-# ✅ その後、ループやイベントで使う
 @tasks.loop(minutes=1)
 async def check_server_status():
     global last_status, last_player_count
@@ -183,10 +197,19 @@ async def check_server_status():
             channel = bot.get_channel(CHANNEL_ID)
             embed = create_status_embed(status, player_count)
 
-            if not hasattr(bot, "status_message"):
-                bot.status_message = await channel.send(embed=embed)
+            message_id = load_message_id()
+            if message_id:
+                try:
+                    message = await channel.fetch_message(message_id)
+                    await message.edit(embed=embed)
+                except discord.NotFound:
+                    # メッセージが見つからない場合は新しく送信
+                    new_message = await channel.send(embed=embed)
+                    save_message_id(new_message.id)
             else:
-                await bot.status_message.edit(embed=embed)
+                # 初回送信
+                new_message = await channel.send(embed=embed)
+                save_message_id(new_message.id)
 
     except Exception as e:
         print(f"エラー: {e}")
