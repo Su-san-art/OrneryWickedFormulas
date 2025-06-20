@@ -57,6 +57,7 @@ def home():
             <p><strong>Discord チャンネルID:</strong> 1385555472605511780</p>
             <p><strong>監視間隔:</strong> 1分ごと</p>
             <p><strong>機能:</strong> プレイヤー数・サーバー状態の自動監視</p>
+            <p><strong>サーバーポート:</strong> 5000</p>
         </div>
     </body>
     </html>
@@ -65,7 +66,7 @@ def home():
 
 
 def run():
-    app.run(host='0.0.0.0', port=3000)
+    app.run(host='0.0.0.0', port=5000)
 
 
 def keep_alive():
