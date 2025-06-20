@@ -3,7 +3,6 @@ from ftplib import FTP
 import discord
 from discord.ext import tasks, commands
 import os
-import json
 
 from flask import Flask, Response
 from threading import Thread
@@ -102,22 +101,6 @@ bot = commands.Bot(command_prefix="/", intents=intents)
 last_status = None  # 状態変化の判定用
 last_player_count = None  # プレイヤー数変化の判定用
 
-MESSAGE_ID_FILE = "message_id.json"
-
-
-def save_message_id(message_id):
-    with open(MESSAGE_ID_FILE, "w") as f:
-        json.dump({"message_id": message_id}, f)
-
-
-def load_message_id():
-    try:
-        with open(MESSAGE_ID_FILE, "r") as f:
-            data = json.load(f)
-            return data.get("message_id")
-    except FileNotFoundError:
-        return None
-
 
 def create_status_embed(status: str, player_count: int) -> discord.Embed:
     color_map = {
@@ -199,19 +182,10 @@ async def check_server_status():
             channel = bot.get_channel(CHANNEL_ID)
             embed = create_status_embed(status, player_count)
 
-            message_id = load_message_id()
-            if message_id:
-                try:
-                    message = await channel.fetch_message(message_id)
-                    await message.edit(embed=embed)
-                except discord.NotFound:
-                    # メッセージが見つからない場合は新しく送信
-                    new_message = await channel.send(embed=embed)
-                    save_message_id(new_message.id)
+            if not hasattr(bot, "status_message"):
+                bot.status_message = await channel.send(embed=embed)
             else:
-                # 初回送信
-                new_message = await channel.send(embed=embed)
-                save_message_id(new_message.id)
+                await bot.status_message.edit(embed=embed)
 
     except Exception as e:
         print(f"エラー: {e}")
