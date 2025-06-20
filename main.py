@@ -87,6 +87,12 @@ LOG_PATH = "/minecraft/logs/latest.log"  # 実際のログファイルパスに�
 
 # -- Discord Bot情報 --
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+# 環境変数の確認
+if not FTP_USER or not FTP_PASS or not DISCORD_TOKEN:
+    print("エラー: 必要な環境変数が設定されていません")
+    print("FTP_USER, FTP_PASS, DISCORD_TOKEN を Replit Secrets で設定してください")
+    exit(1)
 CHANNEL_ID = 1385555472605511780  # 通知したいチャンネルIDに変更してね
 
 intents = discord.Intents.default()
