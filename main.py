@@ -102,6 +102,8 @@ last_status = None  # 状態変化の判定用
 last_player_count = None  # プレイヤー数変化の判定用
 
 
+from datetime import datetime, timedelta, timezone  # ← 追加！
+
 def create_status_embed(status: str, player_count: int) -> discord.Embed:
     color_map = {
         "🟢起動中": discord.Color.green(),
@@ -111,12 +113,19 @@ def create_status_embed(status: str, player_count: int) -> discord.Embed:
         "⚫️ログなし（未起動または停止中）": discord.Color.dark_grey(),
     }
 
-    embed = discord.Embed(title="マイクラサーバー状態",
-                          description=f"**現在の状態：** `{status}`",
-                          color=color_map.get(status, discord.Color.orange()))
-    embed.add_field(name="👥 プレイヤー数", value=str(player_count), inline=False)
-    return embed
+    # 日本時間 (JST) の現在時刻を取得
+    jst = timezone(timedelta(hours=9))
+    now = datetime.now(jst)
+    formatted_time = now.strftime("%Y/%m/%d %H:%M:%S")
 
+    embed = discord.Embed(
+        title="マイクラサーバー状態",
+        description=f"**現在の状態：** `{status}`",
+        color=color_map.get(status, discord.Color.orange())
+    )
+    embed.add_field(name="👥 プレイヤー数", value=str(player_count), inline=False)
+    embed.set_footer(text=f"🕒 最終更新：{formatted_time}（JST）")  # 👈 追加部分
+    return embed
 
 def count_players(log_content):
     connected = set()
